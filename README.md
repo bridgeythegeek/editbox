@@ -8,7 +8,6 @@ Edit controls are created by a call to [CreateWindowEx](https://msdn.microsoft.c
 The part before the exclamation mark (`6.0.7601.17514`) is the version of the [Common Controls](http://msdn.microsoft.com/en-us/library/windows/desktop/bb775493%28v=vs.85%29.aspx) library being used. Owing to Windows Side-by-Side execution (WinSxS), there can be many different versions of the Common Controls library in use at one time.
 
 Edit controls, like Buttons and ListBoxes, are obviously special kinds of windows. As such, they have extra data after the window definition which differentiates them from a generic window. It works like this:
-
 * The window has a property called cbWndExtra. This "[s]pecifies the number of extra bytes to allocate following the window instance."
 * Typically, these bytes are a memory address to a structure.
 * The structure holds the extra bytes that distinguish a specific window, for example an Edit control, from a generic window.
@@ -28,10 +27,10 @@ When memory addresses are output, they are always virtual. Following them, in sq
 ## How do I use it?
 ### Let Volatility know you're using an additional plugin.
 ```
-$ python vol.py --plugins=/folder/to/editboxplugin --filename=memory.dmp --profile=Win7SP1x64 editbox
+$ python vol.py --plugins=/folder/to/editbox -f memory.dmp --profile=Win7SP1x64 editbox
 ```
 ### A Patch
-EditBox calculates the position of the `WndExtra` bytes from the `tagWND` structure. At the time of writing, the defintion of the size of the tagWND structure for Windows XP is wrong so a patch is needed. (A pull request has been made so hopefully this won't be the case for long.)
+EditBox calculates the position of the `WndExtra` bytes from the `tagWND` structure. At the time of writing, the defintion of the size of the tagWND structure for Windows XP is wrong so a patch is needed. (A [pull request](https://github.com/volatilityfoundation/volatility/pull/185/commits) has been made so hopefully this won't be the case for long.)
 ```
 --- xp.py.old	2015-03-21 13:52:20.264852000 +0000
 +++ xp.py	2015-03-21 13:55:06.892852000 +0000
@@ -82,28 +81,45 @@ monkey
 ```
 ## More information about the experimental options.
 The experimental option will try and extract useful information from the following controls:
-
-    ListBox
-    ComboBox
+* ListBox
+* ComboBox
 ### ListBox
 The following information can be extracted from a ListBox control:
-
-    caretPos: The 0-based offset of the item in the list which has focus.
-    rowsVisible: The number of rows the ListBox shows before the user must scroll.
-    firstVisibleRow: The 0-based offset of the first row which is visible.
-    itemCount: The number of items contained in the list.
-    stringsStart: The memory offset at which the strings making up the items in the list can be found.
-    stringsLength: The number of bytes which make up the strings. Each character requires 2 bytes, and each string is null-terminated.
-    strings: A comma-separated list of the strings from the ListBox.
+1. **caretPos**: The 0-based offset of the item in the list which has focus.
+2. **rowsVisible**: The number of rows the ListBox shows before the user must scroll.
+3. **firstVisibleRow**: The 0-based offset of the first row which is visible.
+4. **itemCount**: The number of items contained in the list.
+5. **stringsStart**: The memory offset at which the strings making up the items in the list can be found.
+6. **stringsLength**: The number of bytes which make up the strings. Each character requires 2 bytes, and each string is null-terminated.
+7. **strings**: A comma-separated list of the strings from the ListBox.
 
 #### Sample Output
 ```
+*******************************************************
+*** Experimental **************************************
+*******************************************************
+Wnd context          : 1\WinSta0\Default
+pointer-to tagWND    : 0xfffff900c06615f0 [0x16a445f0]
+pid                  : 2576
+process              : ComCtl.exe
+wow64                : No
+atom_class           : 6.0.7601.17514!Listbox
+address-of cbwndExtra: 0xfffff900c0668418 [0xaa92418]
+value-of cbwndExtra  : 8 (0x8)
+address-of WndExtra  : 0xfffff900c0668458 [0xaa92458]
+value-of WndExtra    : 0x2fd410 [0xd963410]
+firstVisibleRow      : 0 (0x0)
+caretPos             : 0 (0x0)
+rowsVisible          : 3 (0x3)
+itemCount            : 3 (0x3)
+stringsStart         : 0x2fd510 [0xd963510]
+stringsLength        : 56 (0x38)
+strings              : lbxa-zero, lbxa-one, lbxa-two
 
 ```
 ### ComboBox
 The following information can be extracted from a ComboBox control:
-
-    handle-of combolbox: The handle of the ListBox which is a component of the ComboBox.
+1. **handle-of combolbox**: The handle of the ListBox which is a component of the ComboBox.
 #### Sample Output
 ```
 *******************************************************
