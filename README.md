@@ -86,7 +86,7 @@ The experimental option will try and extract useful information from the followi
 * ComboBox
 
 ### ListBox
-The following information can be extracted from a ListBox control:
+#### What information can it get?
 1. **caretPos**: The 0-based offset of the item in the list which has focus.
 2. **rowsVisible**: The number of rows the ListBox shows before the user must scroll.
 3. **firstVisibleRow**: The 0-based offset of the first row which is visible.
@@ -120,8 +120,9 @@ strings              : lbxa-zero, lbxa-one, lbxa-two
 
 ```
 ### ComboBox
-The following information can be extracted from a ComboBox control:
+#### What information can it get?
 1. **handle-of combolbox**: The handle of the ListBox which is a component of the ComboBox.
+
 #### Sample Output
 ```
 *******************************************************
