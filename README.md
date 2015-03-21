@@ -26,6 +26,7 @@ When memory addresses are output, they are always virtual. Following them, in sq
 `address-of cbwndExtra: 0xfffff900c065d958 [0x6203958]`
 ## How do I use it?
 ### Let Volatility know you're using an additional plugin.
+Use the `--plugins` switch to specify the folder containing any additional plugins you wish Volatility to load:
 ```
 $ python vol.py --plugins=/folder/to/editbox -f memory.dmp --profile=Win7SP1x64 editbox
 ```
@@ -83,6 +84,7 @@ monkey
 The experimental option will try and extract useful information from the following controls:
 * ListBox
 * ComboBox
+
 ### ListBox
 The following information can be extracted from a ListBox control:
 1. **caretPos**: The 0-based offset of the item in the list which has focus.
