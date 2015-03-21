@@ -390,7 +390,7 @@ class EditBox(messagehooks.MessageHooks):
         # Are we dumping the text to files?
         dump_to_file = (self._config.dump_dir != None)
         if dump_to_file and not os.path.isdir(self._config.dump_dir):
-            debug.error(self._config.dump_dir + " is not a directory")
+            debug.error("{0} is not a directory".format(self._config.dump_dir))
 
         tasks = win32.tasks.pslist(self._addr_space)
 
@@ -404,7 +404,7 @@ class EditBox(messagehooks.MessageHooks):
                 if self._config.pid == t.UniqueProcessId:
                     the_tasks[int(t.UniqueProcessId)] = t
                     break
-        outfd.write("{0} process(es) to check.\n".format(len(the_tasks)))
+        outfd.write("{0} process{1} to check.\n".format(len(the_tasks), "" if len(the_tasks) == 1 else "es"))
 
         # In case the PID's not found
         if len(the_tasks) < 1:
@@ -431,10 +431,10 @@ class EditBox(messagehooks.MessageHooks):
                                 if atom_class_name.endswith("!Edit"): # or atom_class_name == "Edit":
                                     task = the_tasks[int(wnd.Process.UniqueProcessId)]
                                     self.dump_edit(dump_to_file, atom_class_name, context, outfd, wnd, task)
-                                    if "edit" in counts:
-                                        counts["edit"] += 1
+                                    if "Edit" in counts:
+                                        counts["Edit"] += 1
                                     else:
-                                        counts["edit"] = 1
+                                        counts["Edit"] = 1
 
                             # Experimental options
                             if self._config.experimental or self._config.experimental_only:
@@ -443,19 +443,20 @@ class EditBox(messagehooks.MessageHooks):
                                 if atom_class_name.endswith("!Listbox"): #or atom_class_name.endswith("!ComboLBox")):
                                     task = the_tasks[int(wnd.Process.UniqueProcessId)]
                                     self.dump_listbox(dump_to_file, atom_class_name, context, outfd, wnd, task)
-                                    if "listbox" in counts:
-                                        counts["listbox"] += 1
+                                    if "ListBox" in counts:
+                                        counts["ListBox"] += 1
                                     else:
-                                        counts["listbox"] = 1
+                                        counts["ListBox"] = 1
 
                                 #Combobox control
                                 elif atom_class_name.endswith("!Combobox"):
                                     task = the_tasks[int(wnd.Process.UniqueProcessId)]
                                     self.dump_combobox(dump_to_file, atom_class_name, context, outfd, wnd, task)
-                                    if "combobox" in counts:
-                                        counts["combobox"] += 1
+                                    if "ComboBox" in counts:
+                                        counts["ComboBox"] += 1
                                     else:
-                                        counts["combobox"] = 1
+                                        counts["ComboBox"] = 1
         
+        outfd.write("{0}\n".format("*" * 55))
         for k in counts.keys():
-            outfd.write("{0}: {1}\n".format(k, counts[k]))
+            outfd.write("{0} {1} {2} found.\n".format(counts[k], k, "control" if counts[k] == 1 else "controls"))
