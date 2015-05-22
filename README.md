@@ -49,7 +49,7 @@ EditBox calculates the position of the `WndExtra` bytes from the `tagWND` struct
 #### --dump-dir/-D
 The text of an Edit control can be long. For example, the contents of a Notepad window. Using this switch, EditBox will dump the text to a file in the specified folder. The file will be named as per the MD5 of the text from the Edit control.
 #### --nulls/-n
-Text in an Edit control is stored in Unicode. Therefore, when the text is output to stdout some shells truncate after the first byte because the next byte is a NULL. When outputting to the screen, the plugin will, by default, remove NULLs. NULLs are not removed when outputting to a file. Use this switch if you want the NULLs to be output to stdout. 
+Text in an Edit control is stored in Unicode. Therefore, when the text is output to stdout some shells truncate after the first byte because the next byte is a NULL. When outputting to stdout, the plugin will, by default, remove NULLs. NULLs are not removed when outputting to a file (<tt>--dump-dir/-D</tt>). Use this switch if you want the NULLs to be output to stdout. 
 #### --pid/-p
 EditBox will only work on processes with the specified Process ID.
 #### --minimal/-m
