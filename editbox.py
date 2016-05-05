@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this plugin. If not, see <http://www.gnu.org/licenses/>.
 #
-# This work heavily inspired by  GDI Utilities from Dr Brendan Dolan-Gavitt PhD.
+# This work heavily inspired by GDI Utilities from Dr Brendan Dolan-Gavitt PhD.
 # <http://www.cc.gatech.edu/~brendan/volatility/>
 #
 # The iteration of the Windows objects is borrowed from the Windows plugin.
@@ -39,13 +39,46 @@ import volatility.plugins.gui.messagehooks as messagehooks
 import volatility.win32 as win32
 
 
+supported_controls = {
+    'edit': 'COMCTL_EDIT',
+}
+
+#---------------------------------------------------------------------
+# Edit
+#---------------------------------------------------------------------
 editbox_vtypes_xp_x86 = {
+    'COMCTL_EDIT': [ 0xEE, {
+        'hBuf': [ 0x00, ['pointer', ['pointer', ['unsigned long']]]],
+        'hWnd': [ 0x38, ['unsigned long']],
+        'parenthWnd': [ 0x58, ['unsigned long']],
+        'nChars': [0x0C, ['unsigned long']],
+        'selStart': [0x14, ['unsigned long']],
+        'selEnd': [0x18, ['unsigned long']],
+        'pwdChar': [0x30, ['unsigned short']],
+        'undoBuf': [0x80, ['unsigned long']],
+        'undoPos': [0x84, ['long']],
+        'undoLen': [0x88, ['long']],
+        'bEncKey': [0xEC, ['unsigned char']],
+    }]
 }
 
 editbox_vtypes_xp_x64 = {
 }
 
 editbox_vtypes_vista7_x86 = {
+    'COMCTL_EDIT': [ 0xF6, {
+        'hBuf': [ 0x00, ['pointer', ['pointer', ['unsigned long']]]],
+        'hWnd': [ 0x38, ['unsigned long']],
+        'parenthWnd': [ 0x58, ['unsigned long']],
+        'nChars': [0x0C, ['unsigned long']],
+        'selStart': [0x14, ['unsigned long']],
+        'selEnd': [0x18, ['unsigned long']],
+        'pwdChar': [0x30, ['unsigned short']],
+        'undoBuf': [0x88, ['unsigned long']],
+        'undoPos': [0x8C, ['long']],
+        'undoLen': [0x90, ['long']],
+        'bEncKey': [0xF4, ['unsigned char']],
+    }]
 }
 
 editbox_vtypes_vista7_x64 = {
@@ -64,6 +97,7 @@ editbox_vtypes_vista7_x64 = {
     }]
 }
 
+
 class COMCTL_EDIT(obj.CType):
     """Methods for the Edit structure"""
     
@@ -72,23 +106,37 @@ class COMCTL_EDIT(obj.CType):
         
         _MAX_OUT = 50
         
-        text = self.get_text(self.hBuf, self.nChars)
-        text_len = len(text)
-        text = '{}...'.format(
-            text[:_MAX_OUT - 3]) if len(text) > _MAX_OUT else text
+        text = self.get_text()
+        text = '{}...'.format(text[:_MAX_OUT - 3]) if len(text) > _MAX_OUT else text
         
-        undo = self.get_text(self.undoBuf, self.undoLen)
-        undo_len = len(undo)
-        undo = '{}...'.format(
-            undo[:_MAX_OUT - 3]) if len(undo) > _MAX_OUT else undo
+        undo = self.get_undo()
+        undo = '{}...'.format(undo[:_MAX_OUT - 3]) if len(undo) > _MAX_OUT else undo
         
-        return 'COMCTL_EDIT <Text={0}, Len={1}, Undo={2}, UndoLen={3}>'.format(
-            text, text_len, undo, undo_len)
+        return '<COMCTL_EDIT(Text={0}, Len={1}, Pwd={2}, Undo={3}, UndoLen={4})>'.format(
+            text, self.nChars, self.is_pwd(), undo, self.undoLen)
     
-    def get_text(self, offset, len):
-        # Check pwdChar
-        string = self.obj_vm.read(offset, len * 2).decode('utf-16')
-        return '' if not string else string
+    def get_text(self):
+        if self.nChars < 1:
+            return ''
+        text_deref = obj.Object('address', offset=self.hBuf, vm=self.obj_vm)
+        bytes = self.obj_vm.read(text_deref, self.nChars * 2)
+        if not self.pwdChar == 0x00:  # Is a password dialog
+            bytes = COMCTL_EDIT.RtlRunDecodeUnicodeString(self.bEncKey, bytes)
+        return bytes.decode('utf-16')
+    
+    def get_undo(self):
+        if self.undoLen < 1:
+            return ''
+        return self.obj_vm.read(self.undoBuf, self.undoLen * 2).decode('utf-16')
+    
+    def is_pwd(self):
+        return self.pwdChar != 0x00
+    
+    @staticmethod
+    def RtlRunDecodeUnicodeString(key, data):
+        s = ''.join([chr(ord(data[i-1]) ^ ord(data[i]) ^ key) for i in range(1,len(data))])
+        s = chr(ord(data[0]) ^ (key | 0x43)) + s
+        return s
 
 
 class Editbox2(common.AbstractWindowsCommand):
@@ -158,7 +206,7 @@ class Editbox2(common.AbstractWindowsCommand):
         if len(the_tasks) < 1:
             return
         
-        # Iterate through all the window objects matching for !Edit
+        # Iterate through all the window objects matching for supported controls
         mh = messagehooks.MessageHooks(self._config)
         for winsta, atom_tables in mh.calculate():
             for desktop in winsta.desktops():
@@ -168,13 +216,16 @@ class Editbox2(common.AbstractWindowsCommand):
                         atom_class = mh.translate_atom(winsta,
                             atom_tables, wnd.ClassAtom)
                         
-                        if atom_class.endswith("!Edit"):
-                            task_vm = wnd.Process.get_process_address_space()
-                            
-                            wndextra_offset = wnd.v() + addr_space.profile.get_obj_size('tagWND')
-                            wndextra = obj.Object('address', offset=wndextra_offset, vm=task_vm)
-                            edit = obj.Object('COMCTL_EDIT', offset=wndextra, vm=task_vm)
-                            yield wnd.Process.UniqueProcessId, wnd.Process.ImageFileName, edit
+                        if atom_class:
+                            atom_class = str(atom_class)
+                            if '!' in atom_class:
+                                comctl_class = atom_class.split('!')[-1].lower()
+                                if comctl_class in supported_controls:
+                                    task_vm = wnd.Process.get_process_address_space()                                
+                                    wndextra_offset = wnd.v() + addr_space.profile.get_obj_size('tagWND')
+                                    wndextra = obj.Object('address', offset=wndextra_offset, vm=task_vm)
+                                    ctrl = obj.Object(supported_controls[comctl_class], offset=wndextra, vm=task_vm)
+                                    yield wnd.Process.UniqueProcessId, wnd.Process.ImageFileName, ctrl
     
     def render_text(self, outfd, data):
         """Output the results as text
