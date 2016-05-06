@@ -18,12 +18,15 @@ Edit controls, like Buttons and ListBoxes, are obviously special kinds of window
 2. **selStart**: Selection Start. If text within the control is selected, this is the 0-based index of the first selected character.
 3. **selEnd**: Selection End. If text within the control is selected, this is the 0-based index of the last selected character.
 4. **isPwdControl**: Whether the EditBox is a password control, that is, characters are masked by another character.
-5. **pwdChar**: If a password control, the masking character. For example: *.
-6. And of course, the actual text of the Edit control.
+5. **undoPos**: If there is text in the undo buffer, it was present at this offset.
+6. **undoLen**: If there is text in the undo buffer, this is how many characters.
+7. **address-of undoBuf**: Virtual memory address of the text in the undo buffer.
+8. **undoBuf**: Shows up to the first 50 characters of the undo buffer. (If there are more than 50, the last 3 are replaced with '...'.
+7. And of course, the actual text of the Edit control.
 
 When memory addresses are output, they are always virtual. Following them, in square brackets is the physical address. That is, the offset at which the data can be found when searching the raw dump. For example:
 
-`address-of cbwndExtra: 0xfffff900c065d958 [0x6203958]`
+`value-of WndExtra: 0xfffff900c065d958 [0x6203958]`
 ## How do I use it?
 ### Let Volatility know you're using an additional plugin.
 Use the `--plugins` switch to specify the folder containing any additional plugins you wish Volatility to load:
@@ -91,25 +94,4 @@ stringsStart         : 0x2fd510 [0xd963510]
 stringsLength        : 56 (0x38)
 strings              : lbxa-zero, lbxa-one, lbxa-two
 
-```
-### ComboBox
-#### What information can it get?
-1. **handle-of combolbox**: The handle of the ListBox which is a component of the ComboBox.
-
-#### Sample Output
-```
-*******************************************************
-*** Experimental **************************************
-*******************************************************
-Wnd context          : 1\WinSta0\Default
-pointer-to tagWND    : 0xfffff900c061c4d0 [0x18ce44d0]
-pid                  : 1748
-process              : explorer.exe
-wow64                : No
-atom_class           : 6.0.7601.17514!Combobox
-address-of cbwndExtra: 0xfffff900c061c5b8 [0x18ce45b8]
-value-of cbwndExtra  : 8 (0x8)
-address-of WndExtra  : 0xfffff900c061c5f8 [0x18ce45f8]
-value-of WndExtra    : 0x342c770 [0xc0fd770]
-handle-of combolbox  : 0x10162
 ```
