@@ -30,57 +30,28 @@ Use the `--plugins` switch to specify the folder containing any additional plugi
 ```
 $ python vol.py --plugins=/folder/to/editbox -f memory.dmp --profile=Win7SP1x64 editbox
 ```
-### A Patch
-EditBox calculates the position of the `WndExtra` bytes from the `tagWND` structure. At the time of writing, the defintion of the size of the tagWND structure for Windows XP is wrong so a patch is needed. (A [pull request](https://github.com/volatilityfoundation/volatility/pull/185/commits) has been made so hopefully this won't be the case for long.)
-```
---- xp.py.old	2015-03-21 13:52:20.264852000 +0000
-+++ xp.py	2015-03-21 13:55:06.892852000 +0000
-@@ -157,7 +157,7 @@
-             'right' : [ 0x8, ['long']],
-             'bottom' : [ 0xc, ['long']],
-             }],
--            'tagWND' : [ 0x90, {
-+            'tagWND' : [ 0xA4, {
-             'head' : [ 0x0, ['_THRDESKHEAD']],
-             'ExStyle' : [ 0x1c, ['unsigned long']],
-             'style' : [ 0x20, ['unsigned long']],
-```
 ### Switches
 #### --dump-dir/-D
 The text of an Edit control can be long. For example, the contents of a Notepad window. Using this switch, EditBox will dump the text to a file in the specified folder. The file will be named as per the MD5 of the text from the Edit control.
-#### --nulls/-n
-Text in an Edit control is stored in Unicode. Therefore, when the text is output to stdout some shells truncate after the first byte because the next byte is a NULL. When outputting to stdout, the plugin will, by default, remove NULLs. NULLs are not removed when outputting to a file (<tt>--dump-dir/-D</tt>). Use this switch if you want the NULLs to be output to stdout. 
 #### --pid/-p
 EditBox will only work on processes with the specified Process ID.
-#### --minimal/-m
-Minimal output. Typically, EditBox is quite verbose. With this switch, EditBox will only output the PID, Process Image Name, and the extracted text. (Does not apply to experimental output; see below.)
-#### --experimental/-e
-Enables EditBox's experimental options. Currently EditBox is also capable of parsing some data from ListBox and ComboBox controls. This switch will dump this data **as well as** the EditBox data.
-#### --experimental-only/-E
-EditBox will **only** carry out the experimental options. Currently that is ListBoxes and ComboBoxes. Edit controls will be ignored.
 
 ## Sample Output
 ```
 Wnd context          : 1\WinSta0\Default
-pointer-to tagWND    : 0xfffff900c065d7a0 [0x62037a0]
-pid                  : 1748
+Process ID           : 1748
 imageFileName        : explorer.exe
-wow64                : No
 atom_class           : 6.0.7601.17514!Edit
-address-of cbwndExtra: 0xfffff900c065d958 [0x6203958]
-value-of cbwndExtra  : 8 (0x8)
-address-of WndExtra  : 0xfffff900c065d998 [0x6203998]
 value-of WndExtra    : 0x5ad76d0 [0x250c6d0]
-pointer-to hBuf      : 0x5b2f910 [0x8bb5910]
-hWnd                 : 0xa044a
-parenthWnd           : 0x90408
-nChars               : 6 (0x6)
-selStart             : 6 (0x6)
-selEnd               : 6 (0x6)
-text_md5             : cc2a31715ee8a734ef20747a2edc2d22
+nChars               : 7
+selStart             : 6
+selEnd               : 7
 isPwdControl         : Yes
-pwdChar              : 0x25cf
-monkey
+undoPos              : 0
+undoLen              : 6
+address-of undoBuf   : 0xb1508
+undoBuf              : cheeky
+monkey!
 ```
 ## More information about the experimental options.
 The experimental option will try and extract useful information from the following controls:
