@@ -11,7 +11,7 @@ Edit controls, like Buttons and ListBoxes, are obviously special kinds of window
 * The window has a property called cbWndExtra. This "[s]pecifies the number of extra bytes to allocate following the window instance."
 * Typically, these bytes are a memory address to a structure.
 * The structure holds the extra bytes that distinguish a specific window, for example an Edit control, from a generic window.
-* The EditBox plugin understands what (some of) the extra bytes mean, so, by parsing the structure, is able to get information about the Edit control.
+* The editbox plugin understands what (some of) the extra bytes mean, so, by parsing the structure, is able to get information about the Edit control.
 
 ## What information can it get?
 1. **nChars**: The number of characters in the Edit control.
@@ -21,7 +21,7 @@ Edit controls, like Buttons and ListBoxes, are obviously special kinds of window
 5. **undoPos**: If there is text in the undo buffer, it was present at this offset.
 6. **undoLen**: If there is text in the undo buffer, this is how many characters.
 7. **address-of undoBuf**: Virtual memory address of the text in the undo buffer.
-8. **undoBuf**: Shows up to the first 50 characters of the undo buffer. (If there are more than 50, the last 3 are replaced with '...'.
+8. **undoBuf**: Shows up to the first 50 characters of the undo buffer. (If there are more than 50, the last 3 are replaced with '...'.)
 7. And of course, the actual text of the Edit control.
 
 When memory addresses are output, they are always virtual. Following them, in square brackets is the physical address. That is, the offset at which the data can be found when searching the raw dump. For example:
