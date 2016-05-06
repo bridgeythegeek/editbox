@@ -44,9 +44,6 @@ supported_controls = {
     'edit': 'COMCTL_EDIT',
 }
 
-# ---------------------------------------------------------------------
-# Edit
-# ---------------------------------------------------------------------
 editbox_vtypes_xp_x86 = {
     'COMCTL_EDIT': [0xEE, {
         'hBuf': [0x00, ['pointer', ['pointer', ['unsigned long']]]],
@@ -60,7 +57,18 @@ editbox_vtypes_xp_x86 = {
         'undoPos': [0x84, ['long']],
         'undoLen': [0x88, ['long']],
         'bEncKey': [0xEC, ['unsigned char']],
-    }]
+    }],
+    '_LISTBOX_x86': [0x40, {
+        'hWnd': [0x00, ['unsigned long']],
+        'parenthWnd': [0x04, ['unsigned long']],
+        'atomHandle': [0x08, ['unsigned long']],
+        'firstVisibleRow': [0x10, ['unsigned long']],
+        'caretPos': [0x14, ['long']],
+        'rowsVisible': [0x1C, ['unsigned long']],
+        'itemCount': [0x20, ['unsigned long']],
+        'stringsStart': [0x2C, ['unsigned long']],
+        'stringsLength': [0x34, ['unsigned long']]
+    }],
 }
 
 editbox_vtypes_xp_x64 = {
@@ -79,7 +87,18 @@ editbox_vtypes_vista7_x86 = {
         'undoPos': [0x8C, ['long']],
         'undoLen': [0x90, ['long']],
         'bEncKey': [0xF4, ['unsigned char']],
-    }]
+    }],
+    'COMCTL_LISTBOX': [0x40, {
+        'hWnd': [0x00, ['unsigned long']],
+        'parenthWnd': [0x04, ['unsigned long']],
+        'atomHandle': [0x08, ['unsigned long']],
+        'firstVisibleRow': [0x10, ['unsigned long']],
+        'caretPos': [0x14, ['long']],
+        'rowsVisible': [0x1C, ['unsigned long']],
+        'itemCount': [0x20, ['unsigned long']],
+        'stringsStart': [0x2C, ['unsigned long']],
+        'stringsLength': [0x34, ['unsigned long']]
+    }],
 }
 
 editbox_vtypes_vista7_x64 = {
@@ -95,7 +114,17 @@ editbox_vtypes_vista7_x64 = {
         'undoPos': [0xB0, ['long']],
         'undoLen': [0xB4, ['long']],
         'bEncKey': [0x140, ['unsigned char']],
-    }]
+    }],
+    'COMCTL_LISTBOX': [0x54, {
+        'hWnd': [0x00, ['unsigned long']],
+        'parenthWnd': [0x08, ['unsigned long']],
+        'firstVisibleRow': [0x20, ['unsigned long']],
+        'caretPos': [0x28, ['unsigned long']],
+        'rowsVisible': [0x2C, ['unsigned long']],
+        'itemCount': [0x30, ['unsigned long']],
+        'stringsStart': [0x40, ['unsigned long']],
+        'stringsLength': [0x4C, ['unsigned long']]
+    }],
 }
 
 
@@ -107,31 +136,53 @@ class COMCTL_EDIT(obj.CType):
 
         _MAX_OUT = 50
 
-        text = self.get_text()
+        text = self.get_text(no_crlf=True)
         text = '{}...'.format(text[:_MAX_OUT - 3]) if len(text) > _MAX_OUT else text
 
-        undo = self.get_undo()
+        undo = self.get_undo(no_crlf=True)
         undo = '{}...'.format(undo[:_MAX_OUT - 3]) if len(undo) > _MAX_OUT else undo
 
-        return \
-            '<COMCTL_EDIT(Text={0}, Len={1}, Pwd={2}, Undo={3}, UndoLen={4})>'.format(
-                text, self.nChars, self.is_pwd(), undo, self.undoLen)
+        return '<{0}(Text="{1}", Len={2}, Pwd={3}, Undo="{4}", UndoLen={5})>'.format(
+            self.__class__.__name__, text, self.nChars, self.is_pwd(), undo, self.undoLen)
 
-    def get_text(self):
+    def get_text(self, no_crlf=False):
+        """Get the text from the control
+
+        :param no_crlf:
+        :return:
+        """
+
         if self.nChars < 1:
             return ''
         text_deref = obj.Object('address', offset=self.hBuf, vm=self.obj_vm)
         raw = self.obj_vm.read(text_deref, self.nChars * 2)
         if not self.pwdChar == 0x00:  # Is a password dialog
             raw = COMCTL_EDIT.rtl_run_decode_unicode_string(self.bEncKey, raw)
-        return raw.decode('utf-16')
+        if no_crlf:
+            return raw.decode('utf-16').replace('\r\n', '.')
+        else:
+            return raw.decode('utf-16')
 
-    def get_undo(self):
+    def get_undo(self, no_crlf=False):
+        """Get the contents of the undo buffer
+
+        :param no_crlf:
+        :return:
+        """
+
         if self.undoLen < 1:
             return ''
-        return self.obj_vm.read(self.undoBuf, self.undoLen * 2).decode('utf-16')
+        if no_crlf:
+            return self.obj_vm.read(self.undoBuf, self.undoLen * 2).decode('utf-16').replace('\r\n', '.')
+        else:
+            return self.obj_vm.read(self.undoBuf, self.undoLen * 2).decode('utf-16')
 
     def is_pwd(self):
+        """Is this a password control?
+
+        :return:
+        """
+
         return self.pwdChar != 0x00
 
     def dump_meta(self, outfd):
@@ -146,7 +197,7 @@ class COMCTL_EDIT(obj.CType):
         outfd.write('undoPos           : {}\n'.format(self.undoPos))
         outfd.write('undoLen           : {}\n'.format(self.undoLen))
         outfd.write('address-of undoBuf: {:#x}\n'.format(self.undoBuf))
-        outfd.write('undoBuf           : {}\n'.format(self.get_undo()))
+        outfd.write('undoBuf           : {}\n'.format(self.get_undo(no_crlf=True)))
 
     def dump_data(self, outfd):
         """Dumps the data of the control
@@ -160,6 +211,31 @@ class COMCTL_EDIT(obj.CType):
         s = ''.join([chr(ord(data[i - 1]) ^ ord(data[i]) ^ key) for i in range(1, len(data))])
         s = chr(ord(data[0]) ^ (key | 0x43)) + s
         return s
+
+
+class COMCTL_LISTBOX(obj.CType):
+    """Methods for the Edit structure"""
+
+    def __str__(self):
+        """String representation of the Listbox"""
+
+        return '<{0}()>'.format(self.__class__.__name__)
+
+    def dump_meta(self, outfd):
+        """Dumps the meta data of the control
+
+        @param  outfd:
+        """
+
+        pass
+
+    def dump_data(self, outfd):
+        """Dumps the data of the control
+
+        @param  outfd:
+        """
+
+        pass
 
 
 def dump_to_file(ctrl, pid, proc_name, folder):
@@ -181,6 +257,7 @@ class Editbox2(common.AbstractWindowsCommand):
     # Add the classes for the structures
     editbox_classes = {
         'COMCTL_EDIT': COMCTL_EDIT,
+        'COMCTL_LISTBOX': COMCTL_LISTBOX,
     }
 
     # Map the version of Windows to the correct vtypes
@@ -217,12 +294,10 @@ class Editbox2(common.AbstractWindowsCommand):
 
         meta = addr_space.profile.metadata
         try:
-            vtypes = Editbox2.version_map[
-                meta['os']][meta['major']][meta['memory_model']]
+            vtypes = Editbox2.version_map[meta['os']][meta['major']][meta['memory_model']]
             addr_space.profile.vtypes.update(vtypes)
             addr_space.profile.object_classes.update(Editbox2.editbox_classes)
             addr_space.profile.compile()
-
         except KeyError:
             debug.error("The selected address space is not supported")
 
