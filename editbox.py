@@ -42,6 +42,7 @@ import volatility.win32 as win32
 
 supported_controls = {
     'edit': 'COMCTL_EDIT',
+    'listbox': 'COMCTL_LISTBOX',
 }
 
 editbox_vtypes_xp_x86 = {
@@ -58,7 +59,7 @@ editbox_vtypes_xp_x86 = {
         'undoLen': [0x88, ['long']],
         'bEncKey': [0xEC, ['unsigned char']],
     }],
-    '_LISTBOX_x86': [0x40, {
+    'COMCTL_LISTBOX': [0x40, {
         'hWnd': [0x00, ['unsigned long']],
         'parenthWnd': [0x04, ['unsigned long']],
         'atomHandle': [0x08, ['unsigned long']],
@@ -74,7 +75,7 @@ editbox_vtypes_xp_x86 = {
 editbox_vtypes_xp_x64 = {
 }
 
-editbox_vtypes_vista7_x86 = {
+editbox_vtypes_vista7810_x86 = {
     'COMCTL_EDIT': [0xF6, {
         'hBuf': [0x00, ['pointer', ['pointer', ['unsigned long']]]],
         'hWnd': [0x38, ['unsigned long']],
@@ -101,16 +102,16 @@ editbox_vtypes_vista7_x86 = {
     }],
 }
 
-editbox_vtypes_vista7_x64 = {
+editbox_vtypes_vista7810_x64 = {
     'COMCTL_EDIT': [0x142, {
-        'hBuf': [0x00, ['pointer', ['pointer', ['unsigned long']]]],
+        'hBuf': [0x00, ['pointer', ['pointer', ['unsigned long long']]]],
         'hWnd': [0x40, ['unsigned long']],
         'parenthWnd': [0x60, ['unsigned long']],
         'nChars': [0x10, ['unsigned long']],
         'selStart': [0x18, ['unsigned long']],
         'selEnd': [0x20, ['unsigned long']],
         'pwdChar': [0x34, ['unsigned short']],
-        'undoBuf': [0xA8, ['unsigned long']],
+        'undoBuf': [0xA8, ['unsigned long long']],
         'undoPos': [0xB0, ['long']],
         'undoLen': [0xB4, ['long']],
         'bEncKey': [0x140, ['unsigned char']],
@@ -268,8 +269,8 @@ class Editbox2(common.AbstractWindowsCommand):
                 '64bit': editbox_vtypes_xp_x64,
             },
             6: {
-                '32bit': editbox_vtypes_vista7_x86,
-                '64bit': editbox_vtypes_vista7_x64,
+                '32bit': editbox_vtypes_vista7810_x86,
+                '64bit': editbox_vtypes_vista7810_x64,
             },
         }
     }
