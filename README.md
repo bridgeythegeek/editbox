@@ -53,6 +53,8 @@ address-of undoBuf   : 0xb1508
 undoBuf              : cheeky
 monkey!
 ```
+## What versions of Windows does it work with?
+Editbox knows the structures for Edit controls for Windows XP/2003, Windows 7, Windows 8 and Windows 10 (32-bit and 64-bit versions for all). However, because it relies on Volatility being able to extract the Atom Class Name it currently is only really usable with Windows XP and Windows 7 (and probably their server counterparts).
 ## More information about the experimental options.
 The experimental option will try and extract useful information from the following controls:
 * ListBox
