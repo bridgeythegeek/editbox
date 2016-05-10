@@ -275,7 +275,7 @@ def dump_to_file(ctrl, pid, proc_name, folder):
         out_file.write(ctrl.get_text())
 
 
-class Editbox2(common.AbstractWindowsCommand):
+class Editbox(common.AbstractWindowsCommand):
     """Displays information about Edit controls. (Listbox experimental.)"""
 
     # Add the classes for the structures
@@ -318,9 +318,9 @@ class Editbox2(common.AbstractWindowsCommand):
 
         meta = addr_space.profile.metadata
         try:
-            vtypes = Editbox2.version_map[meta['os']][meta['major']][meta['memory_model']]
+            vtypes = Editbox.version_map[meta['os']][meta['major']][meta['memory_model']]
             addr_space.profile.vtypes.update(vtypes)
-            addr_space.profile.object_classes.update(Editbox2.editbox_classes)
+            addr_space.profile.object_classes.update(Editbox.editbox_classes)
             addr_space.profile.compile()
         except KeyError:
             debug.error("The selected address space is not supported")
