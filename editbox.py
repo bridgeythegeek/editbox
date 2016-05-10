@@ -42,7 +42,7 @@ import volatility.win32 as win32
 
 supported_controls = {
     'edit': 'COMCTL_EDIT',
-    'listbox': 'COMCTL_LISTBOX',
+    #'listbox': 'COMCTL_LISTBOX',
 }
 
 editbox_vtypes_xp_x86 = {
