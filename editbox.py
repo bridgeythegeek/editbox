@@ -54,7 +54,7 @@ editbox_vtypes_xp_x86 = {
         'selStart': [0x14, ['unsigned long']],
         'selEnd': [0x18, ['unsigned long']],
         'pwdChar': [0x30, ['unsigned short']],
-        'undoBuf': [0x80, ['unsigned long']],
+        'undoBuf': [0x80, ['address']],
         'undoPos': [0x84, ['long']],
         'undoLen': [0x88, ['long']],
         'bEncKey': [0xEC, ['unsigned char']],
@@ -67,12 +67,35 @@ editbox_vtypes_xp_x86 = {
         'caretPos': [0x14, ['long']],
         'rowsVisible': [0x1C, ['unsigned long']],
         'itemCount': [0x20, ['unsigned long']],
-        'stringsStart': [0x2C, ['unsigned long']],
+        'stringsStart': [0x2C, ['address']],
         'stringsLength': [0x34, ['unsigned long']]
     }],
 }
 
 editbox_vtypes_xp_x64 = {
+    'COMCTL_EDIT': [ 0x142, {
+        'hBuf': [0x00, ['pointer', ['pointer', ['unsigned long']]]],
+        'hWnd': [0x40, ['unsigned long']],
+        'parenthWnd': [0x60, ['unsigned long']],
+        'nChars': [0x10, ['unsigned long']],
+        'selStart': [0x18, ['unsigned long']],
+        'selEnd': [0x20, ['unsigned long']],
+        'pwdChar': [0x34, ['unsigned short']],
+        'undoBuf': [0xA8, ['address']],
+        'undoPos': [0xB0, ['long']],
+        'undoLen': [0xB4, ['long']],
+        'bEncKey': [0x140, ['unsigned char']]
+    }],
+    'COMCTL_LISTBOX': [ 0x100, {
+        'hWnd': [0x00, ['unsigned long']],
+        'parenthWnd': [0x08, ['unsigned long']],
+        'firstVisibleRow': [0x20, ['unsigned long']],
+        'caretPos': [0x28, ['unsigned long']],
+        'rowsVisible': [0x2C, ['unsigned long']],
+        'itemCount': [0x30, ['unsigned long']],
+        'stringsStart': [0x40, ['address']],
+        'stringsLength': [0x4C, ['unsigned long']]
+    }],
 }
 
 editbox_vtypes_vista7810_x86 = {
@@ -84,7 +107,7 @@ editbox_vtypes_vista7810_x86 = {
         'selStart': [0x14, ['unsigned long']],
         'selEnd': [0x18, ['unsigned long']],
         'pwdChar': [0x30, ['unsigned short']],
-        'undoBuf': [0x88, ['unsigned long']],
+        'undoBuf': [0x88, ['address']],
         'undoPos': [0x8C, ['long']],
         'undoLen': [0x90, ['long']],
         'bEncKey': [0xF4, ['unsigned char']],
@@ -97,7 +120,7 @@ editbox_vtypes_vista7810_x86 = {
         'caretPos': [0x14, ['long']],
         'rowsVisible': [0x1C, ['unsigned long']],
         'itemCount': [0x20, ['unsigned long']],
-        'stringsStart': [0x2C, ['unsigned long']],
+        'stringsStart': [0x2C, ['address']],
         'stringsLength': [0x34, ['unsigned long']]
     }],
 }
@@ -111,7 +134,7 @@ editbox_vtypes_vista7810_x64 = {
         'selStart': [0x18, ['unsigned long']],
         'selEnd': [0x20, ['unsigned long']],
         'pwdChar': [0x34, ['unsigned short']],
-        'undoBuf': [0xA8, ['unsigned long long']],
+        'undoBuf': [0xA8, ['address']],
         'undoPos': [0xB0, ['long']],
         'undoLen': [0xB4, ['long']],
         'bEncKey': [0x140, ['unsigned char']],
@@ -123,7 +146,7 @@ editbox_vtypes_vista7810_x64 = {
         'caretPos': [0x28, ['unsigned long']],
         'rowsVisible': [0x2C, ['unsigned long']],
         'itemCount': [0x30, ['unsigned long']],
-        'stringsStart': [0x40, ['unsigned long']],
+        'stringsStart': [0x40, ['address']],
         'stringsLength': [0x4C, ['unsigned long']]
     }],
 }
