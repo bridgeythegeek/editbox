@@ -411,8 +411,7 @@ class Editbox(common.AbstractWindowsCommand):
                                         meta['memory_model'] = '32bit'
                                         self.apply_types(addr_space, meta)
                                         self.fake_32bit = True
-                                    elif not wnd.Process.IsWow64:
-                                        if self.fake_32bit:
+                                    elif not wnd.Process.IsWow64 and self.fake_32bit:
                                             self.apply_types(addr_space)
                                             self.fake_32bit = False
                                             
@@ -441,7 +440,7 @@ class Editbox(common.AbstractWindowsCommand):
         ])
 
         for context, atom_class, pid, proc_name, is_wow64, ctrl in data:
-            # context and atom_class are ignored
+            # context, atom_class and is_wow64 are ignored
             self.table_row(outfd, pid, proc_name, str(ctrl))
 
     def render_text(self, outfd, data):
