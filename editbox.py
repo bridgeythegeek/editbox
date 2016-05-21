@@ -245,13 +245,13 @@ class COMCTL_LISTBOX(obj.CType):
 
         _MAX_OUT = 50
 
-        text = '|'.join(self.get_text(no_crlf=True))
+        text = self.get_text(joiner='|')
         text = '{}...'.format(text[:_MAX_OUT - 3]) if len(text) > _MAX_OUT else text
 
         return '<{0}(Text="{1}", Items={2}, Caret={3}>'.format(
             self.__class__.__name__, text, self.itemCount, self.caretPos)
     
-    def get_text(self, no_crlf=False):
+    def get_text(self, joiner='\n'):
         """Get the text from the control
 
         :param no_crlf:
@@ -261,7 +261,7 @@ class COMCTL_LISTBOX(obj.CType):
         if self.stringsLength < 1:
             return ''
         raw = self.obj_vm.read(self.stringsStart, self.stringsLength)
-        return split_null_strings(raw)
+        return joiner.join(split_null_strings(raw))
 
     def dump_meta(self, outfd):
         """Dumps the meta data of the control
@@ -282,7 +282,7 @@ class COMCTL_LISTBOX(obj.CType):
         @param  outfd:
         """
 
-        outfd.write('{}\n'.format('\n'.join(self.get_text())))
+        outfd.write('{}\n'.format(self.get_text()))
 
 
 def split_null_strings(data):
