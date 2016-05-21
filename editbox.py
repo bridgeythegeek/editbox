@@ -41,20 +41,20 @@ import volatility.plugins.gui.messagehooks as messagehooks
 import volatility.win32 as win32
 
 supported_controls = {
-    'edit': 'COMCTL_EDIT',
-    #'listbox': 'COMCTL_LISTBOX',
+    'edit'   : 'COMCTL_EDIT',
+    'listbox': 'COMCTL_LISTBOX',
 }
 
 editbox_vtypes_xp_x86 = {
     'COMCTL_EDIT': [0xEE, {
-        'hBuf': [0x00, ['pointer', ['pointer', ['unsigned long']]]],
+        'hBuf': [0x00, ['unsigned long']],
         'hWnd': [0x38, ['unsigned long']],
         'parenthWnd': [0x58, ['unsigned long']],
         'nChars': [0x0C, ['unsigned long']],
         'selStart': [0x14, ['unsigned long']],
         'selEnd': [0x18, ['unsigned long']],
         'pwdChar': [0x30, ['unsigned short']],
-        'undoBuf': [0x80, ['address']],
+        'undoBuf': [0x80, ['unsigned long']],
         'undoPos': [0x84, ['long']],
         'undoLen': [0x88, ['long']],
         'bEncKey': [0xEC, ['unsigned char']],
@@ -67,14 +67,14 @@ editbox_vtypes_xp_x86 = {
         'caretPos': [0x14, ['long']],
         'rowsVisible': [0x1C, ['unsigned long']],
         'itemCount': [0x20, ['unsigned long']],
-        'stringsStart': [0x2C, ['address']],
+        'stringsStart': [0x2C, ['unsigned long']],
         'stringsLength': [0x34, ['unsigned long']]
     }],
 }
 
 editbox_vtypes_xp_x64 = {
     'COMCTL_EDIT': [ 0x142, {
-        'hBuf': [0x00, ['pointer', ['pointer', ['unsigned long']]]],
+        'hBuf': [0x00, ['unsigned long']],
         'hWnd': [0x40, ['unsigned long']],
         'parenthWnd': [0x60, ['unsigned long']],
         'nChars': [0x10, ['unsigned long']],
@@ -100,14 +100,14 @@ editbox_vtypes_xp_x64 = {
 
 editbox_vtypes_vista7810_x86 = {
     'COMCTL_EDIT': [0xF6, {
-        'hBuf': [0x00, ['pointer', ['pointer', ['unsigned long']]]],
+        'hBuf': [0x00, ['unsigned long']],
         'hWnd': [0x38, ['unsigned long']],
         'parenthWnd': [0x58, ['unsigned long']],
         'nChars': [0x0C, ['unsigned long']],
         'selStart': [0x14, ['unsigned long']],
         'selEnd': [0x18, ['unsigned long']],
         'pwdChar': [0x30, ['unsigned short']],
-        'undoBuf': [0x88, ['address']],
+        'undoBuf': [0x88, ['unsigned long']],
         'undoPos': [0x8C, ['long']],
         'undoLen': [0x90, ['long']],
         'bEncKey': [0xF4, ['unsigned char']],
@@ -120,14 +120,14 @@ editbox_vtypes_vista7810_x86 = {
         'caretPos': [0x14, ['long']],
         'rowsVisible': [0x1C, ['unsigned long']],
         'itemCount': [0x20, ['unsigned long']],
-        'stringsStart': [0x2C, ['address']],
+        'stringsStart': [0x2C, ['unsigned long']],
         'stringsLength': [0x34, ['unsigned long']]
     }],
 }
 
 editbox_vtypes_vista7810_x64 = {
     'COMCTL_EDIT': [0x142, {
-        'hBuf': [0x00, ['pointer', ['pointer', ['unsigned long long']]]],
+        'hBuf': [0x00, ['unsigned long']],
         'hWnd': [0x40, ['unsigned long']],
         'parenthWnd': [0x60, ['unsigned long']],
         'nChars': [0x10, ['unsigned long']],
@@ -178,7 +178,7 @@ class COMCTL_EDIT(obj.CType):
 
         if self.nChars < 1:
             return ''
-        text_deref = obj.Object('address', offset=self.hBuf, vm=self.obj_vm)
+        text_deref = obj.Object('unsigned long', offset=self.hBuf, vm=self.obj_vm)
         raw = self.obj_vm.read(text_deref, self.nChars * 2)
         if not self.pwdChar == 0x00:  # Is a password dialog
             raw = COMCTL_EDIT.rtl_run_decode_unicode_string(self.bEncKey, raw)
@@ -243,7 +243,25 @@ class COMCTL_LISTBOX(obj.CType):
     def __str__(self):
         """String representation of the Listbox"""
 
-        return '<{0}()>'.format(self.__class__.__name__)
+        _MAX_OUT = 50
+
+        text = '|'.join(self.get_text(no_crlf=True))
+        text = '{}...'.format(text[:_MAX_OUT - 3]) if len(text) > _MAX_OUT else text
+
+        return '<{0}(Text="{1}", Items={2}, Caret={3}>'.format(
+            self.__class__.__name__, text, self.itemCount, self.caretPos)
+    
+    def get_text(self, no_crlf=False):
+        """Get the text from the control
+
+        :param no_crlf:
+        :return:
+        """
+
+        if self.stringsLength < 1:
+            return ''
+        raw = self.obj_vm.read(self.stringsStart, self.stringsLength)
+        return split_null_strings(raw)
 
     def dump_meta(self, outfd):
         """Dumps the meta data of the control
@@ -251,7 +269,12 @@ class COMCTL_LISTBOX(obj.CType):
         @param  outfd:
         """
 
-        pass
+        outfd.write('firstVisibleRow   : {}\n'.format(self.firstVisibleRow))
+        outfd.write('caretPos          : {}\n'.format(self.caretPos))
+        outfd.write('rowsVisible       : {}\n'.format(self.rowsVisible))
+        outfd.write('itemCount         : {}\n'.format(self.itemCount))
+        outfd.write('stringsStart      : {:#x}\n'.format(self.stringsStart))
+        outfd.write('stringsLength     : {}\n'.format(self.stringsLength))
 
     def dump_data(self, outfd):
         """Dumps the data of the control
@@ -259,8 +282,22 @@ class COMCTL_LISTBOX(obj.CType):
         @param  outfd:
         """
 
-        pass
+        outfd.write('{}\n'.format('\n'.join(self.get_text())))
 
+
+def split_null_strings(data):
+    """Splits a concatenation of null-terminated utf-16 strings
+    
+    @param  data:
+    """
+    
+    strings = []
+    start = 0
+    for i in xrange(0, len(data), 2):
+        if data[i] == '\x00' and data[i+1] == '\x00':
+            strings.append(data[start:i])
+            start = i+2
+    return [s.decode('utf-16') for s in strings]
 
 def dump_to_file(ctrl, pid, proc_name, folder):
     """Dumps the data of the control to a file
@@ -280,22 +317,8 @@ class Editbox(common.AbstractWindowsCommand):
 
     # Add the classes for the structures
     editbox_classes = {
-        'COMCTL_EDIT': COMCTL_EDIT,
+        'COMCTL_EDIT'   : COMCTL_EDIT,
         'COMCTL_LISTBOX': COMCTL_LISTBOX,
-    }
-
-    # Map the version of Windows to the correct vtypes
-    version_map = {
-        'windows': {
-            5: {
-                '32bit': editbox_vtypes_xp_x86,
-                '64bit': editbox_vtypes_xp_x64,
-            },
-            6: {
-                '32bit': editbox_vtypes_vista7810_x86,
-                '64bit': editbox_vtypes_vista7810_x64,
-            },
-        }
     }
 
     def __init__(self, config, *args, **kwargs):
@@ -308,21 +331,40 @@ class Editbox(common.AbstractWindowsCommand):
         config.add_option('DUMP-DIR', short_option='D', default=None,
                           help='Save the found text to files in this folder',
                           action='store', type='str')
+        
+        self.fake_32bit = False
 
     @staticmethod
-    def apply_types(addr_space):
+    def apply_types(addr_space, meta=None):
         """Add the correct vtypes and classes for the profile
-        
-        @param  addr_space: <volatility.BaseAddressSpace>
+
+        @param  addr_space:        
+        @param  meta: 
         """
 
-        meta = addr_space.profile.metadata
-        try:
-            vtypes = Editbox.version_map[meta['os']][meta['major']][meta['memory_model']]
-            addr_space.profile.vtypes.update(vtypes)
-            addr_space.profile.object_classes.update(Editbox.editbox_classes)
-            addr_space.profile.compile()
-        except KeyError:
+        if not meta:
+            meta = addr_space.profile.metadata
+        
+        if meta['os'] == 'windows':
+            if meta['major'] == 5:
+                if meta['memory_model'] == '32bit':
+                    addr_space.profile.vtypes.update(editbox_vtypes_xp_x86)
+                elif meta['memory_model'] == '64bit':
+                    addr_space.profile.vtypes.update(editbox_vtypes_xp_x64)
+                else:
+                    debug.error("The selected address space is not supported")
+                addr_space.profile.compile()
+            elif meta['major'] == 6:
+                if meta['memory_model'] == '32bit':
+                    addr_space.profile.vtypes.update(editbox_vtypes_vista7810_x86)
+                elif meta['memory_model'] == '64bit':
+                    addr_space.profile.vtypes.update(editbox_vtypes_vista7810_x64)
+                else:
+                    debug.error("The selected address space is not supported")
+                addr_space.profile.compile()
+            else:
+                debug.error("The selected address space is not supported")
+        else:
             debug.error("The selected address space is not supported")
 
     def calculate(self):
@@ -334,6 +376,7 @@ class Editbox(common.AbstractWindowsCommand):
 
         # Apply the correct vtypes for the profile
         addr_space = utils.load_as(self._config)
+        addr_space.profile.object_classes.update(Editbox.editbox_classes)
         self.apply_types(addr_space)
 
         # Build a list of tasks
@@ -361,6 +404,18 @@ class Editbox(common.AbstractWindowsCommand):
                             if '!' in atom_class:
                                 comctl_class = atom_class.split('!')[-1].lower()
                                 if comctl_class in supported_controls:
+                                    
+                                    # Do we need to fake being 32bit for Wow?
+                                    if wnd.Process.IsWow64 and not self.fake_32bit:
+                                        meta = addr_space.profile.metadata
+                                        meta['memory_model'] = '32bit'
+                                        self.apply_types(addr_space, meta)
+                                        self.fake_32bit = True
+                                    elif not wnd.Process.IsWow64:
+                                        if self.fake_32bit:
+                                            self.apply_types(addr_space)
+                                            self.fake_32bit = False
+                                            
                                     context = '{0}\\{1}\\{2}'.format(winsta.dwSessionId, winsta.Name, desktop.Name)
                                     task_vm = wnd.Process.get_process_address_space()
                                     wndextra_offset = wnd.v() + addr_space.profile.get_obj_size('tagWND')
@@ -370,7 +425,7 @@ class Editbox(common.AbstractWindowsCommand):
                                         dump_to_file(ctrl, wnd.Process.UniqueProcessId,
                                                      wnd.Process.ImageFileName, self._config.DUMP_DIR)
                                     yield context, atom_class, wnd.Process.UniqueProcessId, \
-                                        wnd.Process.ImageFileName, ctrl
+                                        wnd.Process.ImageFileName, wnd.Process.IsWow64, ctrl
 
     def render_table(self, outfd, data):
         """Output the results as a table
@@ -385,7 +440,7 @@ class Editbox(common.AbstractWindowsCommand):
             ('Control', ""),
         ])
 
-        for context, atom_class, pid, proc_name, ctrl in data:
+        for context, atom_class, pid, proc_name, is_wow64, ctrl in data:
             # context and atom_class are ignored
             self.table_row(outfd, pid, proc_name, str(ctrl))
 
@@ -396,11 +451,12 @@ class Editbox(common.AbstractWindowsCommand):
         @param  data: <generator>
         """
 
-        for context, atom_class, pid, proc_name, ctrl in data:
+        for context, atom_class, pid, proc_name, is_wow64, ctrl in data:
             outfd.write('{}\n'.format('*' * 30))
             outfd.write('Wnd Context       : {}\n'.format(context))
             outfd.write('Process ID        : {}\n'.format(pid))
             outfd.write('ImageFileName     : {}\n'.format(proc_name))
+            outfd.write('IsWow64           : {}\n'.format('Yes' if is_wow64 else 'No'))
             outfd.write('atom_class        : {}\n'.format(atom_class))
             outfd.write('value-of WndExtra : {:#x}\n'.format(ctrl.v()))
             ctrl.dump_meta(outfd)
