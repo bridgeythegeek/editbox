@@ -238,7 +238,7 @@ class COMCTL_EDIT(obj.CType):
 
 
 class COMCTL_LISTBOX(obj.CType):
-    """Methods for the Edit structure"""
+    """Methods for the Listbox structure"""
 
     def __str__(self):
         """String representation of the Listbox"""
@@ -254,8 +254,8 @@ class COMCTL_LISTBOX(obj.CType):
     def get_text(self, joiner='\n'):
         """Get the text from the control
 
-        :param no_crlf:
-        :return:
+        @param joiner:
+        @return:
         """
 
         if self.stringsLength < 1:
@@ -305,6 +305,7 @@ def dump_to_file(ctrl, pid, proc_name, folder):
     @param  ctrl:
     @param  pid:
     @param  proc_name:
+    @param  folder:
     """
     ctrl_safe_name = str(ctrl.__class__.__name__).split('_')[-1].lower()
     file_name = '{0}_{1}_{2}_{3:#x}.txt'.format(pid, proc_name, ctrl_safe_name, ctrl.v())
