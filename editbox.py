@@ -196,10 +196,10 @@ class COMCTL_EDIT(obj.CType):
 
         if self.undoLen < 1:
             return ''
-        if no_crlf:
-            return self.obj_vm.read(self.undoBuf, self.undoLen * 2).decode('utf-16').replace('\r\n', '.')
-        else:
-            return self.obj_vm.read(self.undoBuf, self.undoLen * 2).decode('utf-16')
+        r = self.obj_vm.read(self.undoBuf, self.undoLen * 2)
+        if r is not None:
+            r = r.decode('utf-16')
+            return r.replace('\r\n', '.') if no_crlf else r
 
     def is_pwd(self):
         """Is this a password control?
